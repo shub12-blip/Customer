@@ -1,0 +1,6 @@
+{
+  "name": "AICSM Portal",
+  "description": "Responsive AICSM student and training center portal with official website integration, franchise enquiry links, Google Sign-In authentication, and cloud-synced records.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

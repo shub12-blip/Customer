@@ -1,0 +1,138 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Authenticated AICSM student or center partner profile synced across devices.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Firebase Auth UID matching the document ID."
+        },
+        "displayName": {
+          "type": "string",
+          "description": "Display name of the authenticated user (1-80 chars)."
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "Verified Google account email address."
+        },
+        "role": {
+          "type": "string",
+          "enum": ["STUDENT", "FRANCHISE_APPLICANT", "CENTER_PARTNER"],
+          "description": "User role within the AICSM portal."
+        },
+        "preferredPortalMode": {
+          "type": "string",
+          "enum": ["IN_APP", "EXTERNAL_BROWSER"],
+          "description": "Preferred mode for opening https://www.aicsm.com and franchise links."
+        },
+        "centerName": {
+          "type": "string",
+          "description": "Optional training center or prospective franchise name."
+        },
+        "city": {
+          "type": "string",
+          "description": "Optional city or district."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp written via FieldValue.serverTimestamp()."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp written via FieldValue.serverTimestamp()."
+        }
+      },
+      "required": ["userId", "displayName", "email", "role", "preferredPortalMode", "createdAt", "updatedAt"]
+    },
+    "PortalRecord": {
+      "title": "PortalRecord",
+      "description": "Cloud-synced franchise enquiry tracker, course checklist, or study record belonging to a user.",
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Record title (1-100 chars)."
+        },
+        "category": {
+          "type": "string",
+          "enum": ["COURSE_NOTE", "FRANCHISE_ENQUIRY", "DOCUMENT_CHECKLIST"],
+          "description": "Category of synced portal record."
+        },
+        "status": {
+          "type": "string",
+          "enum": ["DRAFT", "SUBMITTED", "ARCHIVED"],
+          "description": "Lifecycle status of the record; ARCHIVED is terminal."
+        },
+        "details": {
+          "type": "string",
+          "description": "Notes or details (0-500 chars)."
+        },
+        "linkedUrl": {
+          "type": "string",
+          "description": "Associated AICSM portal or enquiry URL (1-300 chars)."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp written via FieldValue.serverTimestamp()."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp written via FieldValue.serverTimestamp()."
+        }
+      },
+      "required": ["title", "category", "status", "details", "linkedUrl", "createdAt", "updatedAt"]
+    },
+    "PortalBookmark": {
+      "title": "PortalBookmark",
+      "description": "Cloud-synced quick bookmark to an official AICSM web resource.",
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Bookmark display label (1-80 chars)."
+        },
+        "url": {
+          "type": "string",
+          "description": "Official AICSM HTTPS URL (1-300 chars)."
+        },
+        "category": {
+          "type": "string",
+          "enum": ["PORTAL", "FRANCHISE", "COURSES", "VERIFICATION"],
+          "description": "Bookmark category."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp written via FieldValue.serverTimestamp()."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp written via FieldValue.serverTimestamp()."
+        }
+      },
+      "required": ["title", "url", "category", "createdAt", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "Private user profile and portal preferences isolated by userId."
+    },
+    "/users/{userId}/records/{recordId}": {
+      "schema": { "$ref": "#/entities/PortalRecord" },
+      "description": "Cloud-synced franchise enquiry tracker items and academic study records."
+    },
+    "/users/{userId}/bookmarks/{bookmarkId}": {
+      "schema": { "$ref": "#/entities/PortalBookmark" },
+      "description": "Cloud-synced AICSM official web portal and franchise bookmarks."
+    }
+  }
+}

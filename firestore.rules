@@ -1,0 +1,131 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global safety net: deny all reads/writes by default
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Shared Hardened Primitives ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // --- Entity Validation Helpers ---
+    function isValidUserProfile(data) {
+      return data.userId is string && data.userId.size() >= 1 && data.userId.size() <= 128 &&
+             data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 80 &&
+             data.email is string && data.email.size() >= 3 && data.email.size() <= 160 &&
+             data.role in ['STUDENT', 'FRANCHISE_APPLICANT', 'CENTER_PARTNER'] &&
+             data.preferredPortalMode in ['IN_APP', 'EXTERNAL_BROWSER'] &&
+             (!('centerName' in data) || (data.centerName is string && data.centerName.size() <= 100)) &&
+             (!('city' in data) || (data.city is string && data.city.size() <= 80));
+    }
+
+    function isValidPortalRecord(data) {
+      return data.title is string && data.title.size() >= 1 && data.title.size() <= 100 &&
+             data.category in ['COURSE_NOTE', 'FRANCHISE_ENQUIRY', 'DOCUMENT_CHECKLIST'] &&
+             data.status in ['DRAFT', 'SUBMITTED', 'ARCHIVED'] &&
+             data.details is string && data.details.size() <= 500 &&
+             data.linkedUrl is string && data.linkedUrl.size() >= 1 && data.linkedUrl.size() <= 300 &&
+             data.linkedUrl.matches('^https://(www\\.)?aicsm\\.com(/.*)?$');
+    }
+
+    function isValidPortalBookmark(data) {
+      return data.title is string && data.title.size() >= 1 && data.title.size() <= 80 &&
+             data.url is string && data.url.size() >= 1 && data.url.size() <= 300 &&
+             data.url.matches('^https://(www\\.)?aicsm\\.com(/.*)?$') &&
+             data.category in ['PORTAL', 'FRANCHISE', 'COURSES', 'VERIFICATION'];
+    }
+
+    // --- Collection Rules ---
+    match /users/{userId} {
+      allow list: if isOwner(userId);
+      allow get: if isValidId(userId) && isOwner(userId);
+
+      allow create: if isValidId(userId) &&
+                       isOwner(userId) &&
+                       incoming().userId == request.auth.uid &&
+                       incoming().keys().hasAll(['userId', 'displayName', 'email', 'role', 'preferredPortalMode', 'createdAt', 'updatedAt']) &&
+                       incoming().keys().hasOnly(['userId', 'displayName', 'email', 'role', 'preferredPortalMode', 'centerName', 'city', 'createdAt', 'updatedAt']) &&
+                       incoming().createdAt is timestamp && incoming().createdAt <= request.time &&
+                       incoming().updatedAt is timestamp && incoming().updatedAt <= request.time &&
+                       isValidUserProfile(incoming());
+
+      allow update: if isValidId(userId) &&
+                       isOwner(userId) &&
+                       isValidUserProfile(incoming()) &&
+                       incoming().userId == existing().userId &&
+                       incoming().email == existing().email &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().updatedAt is timestamp && incoming().updatedAt <= request.time &&
+                       incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'role', 'preferredPortalMode', 'centerName', 'city', 'updatedAt']);
+
+      allow delete: if isValidId(userId) && isOwner(userId);
+
+      // Subcollection: Cloud-synced franchise enquiry & study records
+      match /records/{recordId} {
+        allow list: if isOwner(userId);
+        allow get: if isValidId(recordId) && isOwner(userId);
+
+        allow create: if isValidId(recordId) &&
+                         isOwner(userId) &&
+                         incoming().keys().hasAll(['title', 'category', 'status', 'details', 'linkedUrl', 'createdAt', 'updatedAt']) &&
+                         incoming().keys().hasOnly(['title', 'category', 'status', 'details', 'linkedUrl', 'createdAt', 'updatedAt']) &&
+                         incoming().createdAt is timestamp && incoming().createdAt <= request.time &&
+                         incoming().updatedAt is timestamp && incoming().updatedAt <= request.time &&
+                         isValidPortalRecord(incoming());
+
+        allow update: if isValidId(recordId) &&
+                         isOwner(userId) &&
+                         isValidPortalRecord(incoming()) &&
+                         existing().status != 'ARCHIVED' &&
+                         incoming().createdAt == existing().createdAt &&
+                         incoming().updatedAt is timestamp && incoming().updatedAt <= request.time &&
+                         incoming().diff(existing()).affectedKeys().hasOnly(['title', 'category', 'status', 'details', 'linkedUrl', 'updatedAt']);
+
+        allow delete: if isValidId(recordId) && isOwner(userId);
+      }
+
+      // Subcollection: Cloud-synced AICSM portal bookmarks
+      match /bookmarks/{bookmarkId} {
+        allow list: if isOwner(userId);
+        allow get: if isValidId(bookmarkId) && isOwner(userId);
+
+        allow create: if isValidId(bookmarkId) &&
+                         isOwner(userId) &&
+                         incoming().keys().hasAll(['title', 'url', 'category', 'createdAt', 'updatedAt']) &&
+                         incoming().keys().hasOnly(['title', 'url', 'category', 'createdAt', 'updatedAt']) &&
+                         incoming().createdAt is timestamp && incoming().createdAt <= request.time &&
+                         incoming().updatedAt is timestamp && incoming().updatedAt <= request.time &&
+                         isValidPortalBookmark(incoming());
+
+        allow update: if isValidId(bookmarkId) &&
+                         isOwner(userId) &&
+                         isValidPortalBookmark(incoming()) &&
+                         incoming().createdAt == existing().createdAt &&
+                         incoming().updatedAt is timestamp && incoming().updatedAt <= request.time &&
+                         incoming().diff(existing()).affectedKeys().hasOnly(['title', 'url', 'category', 'updatedAt']);
+
+        allow delete: if isValidId(bookmarkId) && isOwner(userId);
+      }
+    }
+  }
+}

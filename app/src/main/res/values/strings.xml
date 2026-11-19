@@ -1,0 +1,24 @@
+<resources>
+    <string name="app_name">AICSM Portal</string>
+    <string name="portal_tagline">All India Computer Saksharta Mission</string>
+    <string name="sign_in_with_google">Sign in with Google</string>
+    <string name="sign_out">Sign Out</string>
+    <string name="nav_home">Home</string>
+    <string name="nav_portal">Portal</string>
+    <string name="nav_franchise">Franchise</string>
+    <string name="nav_sync">Cloud Sync</string>
+    <string name="open_official_portal">Open AICSM Website</string>
+    <string name="open_franchise_enquiry">Apply for Franchise</string>
+    <string name="open_in_browser">Open in Browser</string>
+    <string name="cd_hero_banner">AICSM digital learning and certification center illustration</string>
+    <string name="cd_franchise_banner">AICSM authorized training center franchise campus illustration</string>
+    <string name="cd_user_avatar">User profile picture</string>
+    <string name="cd_back">Navigate back</string>
+    <string name="cd_forward">Navigate forward</string>
+    <string name="cd_refresh">Refresh page</string>
+    <string name="cd_bookmark">Save bookmark to cloud</string>
+    <string name="cd_add_record">Add cloud synced record</string>
+    <string name="cd_edit_record">Edit record</string>
+    <string name="cd_delete_record">Delete record</string>
+    <string name="cd_archive_record">Archive and lock record</string>
+</resources>
